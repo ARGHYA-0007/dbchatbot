@@ -174,7 +174,102 @@ def delete_student(student_id: int):
 
     return f"Student {student_id} deleted successfully."
 
+# ---------------------------------------------------------
 
+@tool
+def query_students(
+    order_by: str = "id",
+    order_direction: str = "ASC",
+    branch: str = None,
+    min_age: int = None,
+    max_age: int = None,
+    limit: int = None
+):
+    """
+    Get students from the students table with sorting,
+    filtering, and limiting options. Use this instead of
+    get_students whenever the user asks to sort, filter,
+    or limit the results in any way.
+
+    Args:
+        order_by: Column to sort by. One of:
+            "id", "name", "age", "branch". Defaults to "id".
+        order_direction: "ASC" or "DESC". Defaults to "ASC".
+        branch: Optional. Filter to only this branch
+            (e.g. "IT", "CSE"). Leave unset for all branches.
+        min_age: Optional. Only students at or above this age.
+        max_age: Optional. Only students at or below this age.
+        limit: Optional. Max number of rows to return
+            (e.g. "top 5 oldest students" -> limit=5).
+
+    Examples:
+        - "show students ordered by age" -> order_by="age"
+        - "students in IT branch" -> branch="IT"
+        - "top 5 oldest students" -> order_by="age", order_direction="DESC", limit=5
+        - "students older than 20" -> min_age=21
+        - "CSE students sorted by name" -> branch="CSE", order_by="name"
+    """
+
+    allowed_columns = {"id", "name", "age", "branch"}
+    allowed_directions = {"ASC", "DESC"}
+
+    if order_by not in allowed_columns:
+        order_by = "id"
+
+    order_direction = order_direction.upper()
+    if order_direction not in allowed_directions:
+        order_direction = "ASC"
+
+    # Build WHERE clause dynamically using placeholders for
+    # actual values (safe from SQL injection), while column
+    # names / keywords are whitelisted separately above.
+    conditions = []
+    params = []
+
+    if branch is not None:
+        conditions.append("branch = %s")
+        params.append(branch)
+
+    if min_age is not None:
+        conditions.append("age >= %s")
+        params.append(min_age)
+
+    if max_age is not None:
+        conditions.append("age <= %s")
+        params.append(max_age)
+
+    where_clause = ""
+    if conditions:
+        where_clause = "WHERE " + " AND ".join(conditions)
+
+    limit_clause = ""
+    if limit is not None:
+        limit_clause = "LIMIT %s"
+        params.append(limit)
+
+    query = f"""
+        SELECT id, name, age, branch
+        FROM students
+        {where_clause}
+        ORDER BY {order_by} {order_direction}
+        {limit_clause};
+    """
+
+    with conn.cursor() as cur:
+        cur.execute(query, params)
+        rows = cur.fetchall()
+
+    students = []
+
+    for row in rows:
+        students.append({
+            "id": row[0],
+            "name": row[1],
+            "age": row[2],
+            "branch": row[3]
+        })
+
+    return json.dumps(students)
 # =========================================================
 # TOOL LIST
 # =========================================================
@@ -184,7 +279,8 @@ tools = [
     insert_student,
     get_students,
     update_student,
-    delete_student
+    delete_student,
+    query_students
 ]
 
 
@@ -202,10 +298,17 @@ llm_with_tools = llm.bind_tools(tools)
 # =========================================================
 # STATE
 # =========================================================
+# NOTE: Annotated[list, add_messages] is the fix.
+# Without the add_messages reducer, LangGraph OVERWRITES
+# the messages list on every node return instead of
+# appending to it -- so by the time workflow.invoke()
+# finishes, result["messages"] only contains the LAST
+# message, and your ToolMessage from get_students is lost
+# before FastAPI ever sees it.
 
 class DBState(TypedDict):
 
-    messages: list
+    messages: Annotated[list, add_messages]
 
 
 # =========================================================
@@ -278,7 +381,6 @@ graph.add_edge(
 
 
 workflow = graph.compile()
-
 
 # # =========================================================
 # # CHAT LOOP

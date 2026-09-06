@@ -1,0 +1,716 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Database AI Chatbot</title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+
+        body {
+
+            font-family: Arial, sans-serif;
+
+            background: #f4f4f4;
+
+            height: 100vh;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+        }
+
+
+        /* Main Chat Container */
+
+        .chat-container {
+
+            width: 750px;
+
+            height: 650px;
+
+            background: white;
+
+            border-radius: 15px;
+
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+
+            display: flex;
+
+            flex-direction: column;
+
+            overflow: hidden;
+
+        }
+
+
+        /* Header */
+
+        .header {
+
+            background: #222;
+
+            color: white;
+
+            padding: 20px;
+
+            text-align: center;
+
+        }
+
+
+        .header h1 {
+
+            font-size: 22px;
+
+            margin-bottom: 5px;
+
+        }
+
+
+        .header p {
+
+            font-size: 13px;
+
+            color: #cccccc;
+
+        }
+
+
+        /* Chat messages area */
+
+        #chat-box {
+
+            flex: 1;
+
+            padding: 20px;
+
+            overflow-y: auto;
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 15px;
+
+        }
+
+
+        /* Common message */
+
+        .message {
+
+            max-width: 80%;
+
+            padding: 12px 16px;
+
+            border-radius: 12px;
+
+            line-height: 1.5;
+
+            white-space: pre-wrap;
+
+            word-wrap: break-word;
+
+        }
+
+
+        /* User message */
+
+        .user {
+
+            align-self: flex-end;
+
+            background: #222;
+
+            color: white;
+
+            border-bottom-right-radius: 3px;
+
+        }
+
+
+        /* Bot message */
+
+        .bot {
+
+            align-self: flex-start;
+
+            background: #eeeeee;
+
+            color: #222;
+
+            border-bottom-left-radius: 3px;
+
+        }
+
+
+        /* Input area */
+
+        .input-area {
+
+            display: flex;
+
+            gap: 10px;
+
+            padding: 15px;
+
+            border-top: 1px solid #dddddd;
+
+        }
+
+
+        #query {
+
+            flex: 1;
+
+            padding: 13px;
+
+            border: 1px solid #cccccc;
+
+            border-radius: 8px;
+
+            font-size: 15px;
+
+            outline: none;
+
+        }
+
+
+        #query:focus {
+
+            border-color: #555;
+
+        }
+
+
+        #send-btn {
+
+            padding: 13px 22px;
+
+            border: none;
+
+            border-radius: 8px;
+
+            background: #222;
+
+            color: white;
+
+            cursor: pointer;
+
+            font-size: 15px;
+
+        }
+
+
+        #send-btn:hover {
+
+            background: #444;
+
+        }
+
+
+        #send-btn:disabled {
+
+            background: #999;
+
+            cursor: not-allowed;
+
+        }
+
+
+        /* Table */
+
+        .table-container {
+
+            width: 100%;
+
+            overflow-x: auto;
+
+        }
+
+
+        .student-table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            background: white;
+
+            font-size: 14px;
+
+        }
+
+
+        .student-table th {
+
+            background: #222;
+
+            color: white;
+
+            padding: 10px;
+
+            text-align: left;
+
+        }
+
+
+        .student-table td {
+
+            padding: 10px;
+
+            border-bottom: 1px solid #dddddd;
+
+        }
+
+
+        .student-table tr:hover {
+
+            background: #f5f5f5;
+
+        }
+
+
+        /* Mobile */
+
+        @media (max-width: 800px) {
+
+            .chat-container {
+
+                width: 95%;
+
+                height: 90vh;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <div class="chat-container">
+
+
+        <!-- Header -->
+
+        <div class="header">
+
+            <h1>Database AI Chatbot</h1>
+
+            <p>Ask questions about your PostgreSQL database</p>
+
+        </div>
+
+
+        <!-- Chat -->
+
+        <div id="chat-box">
+
+            <div class="message bot">
+
+                Hello! 👋
+
+                Ask me something about your database.
+
+                For example:
+
+                "Get all students"
+
+            </div>
+
+        </div>
+
+
+        <!-- Input -->
+
+        <div class="input-area">
+
+            <input
+                type="text"
+                id="query"
+                placeholder="Ask something..."
+                autocomplete="off"
+            >
+
+            <button id="send-btn">
+
+                Send
+
+            </button>
+
+        </div>
+
+
+    </div>
+
+
+
+    <script>
+
+
+        /* =========================
+           GET HTML ELEMENTS
+        ========================= */
+
+        const queryInput =
+            document.getElementById("query");
+
+
+        const sendButton =
+            document.getElementById("send-btn");
+
+
+        const chatBox =
+            document.getElementById("chat-box");
+
+
+
+        /* =========================
+           ADD NORMAL MESSAGE
+        ========================= */
+
+        function addMessage(message, type) {
+
+            const div =
+                document.createElement("div");
+
+
+            div.classList.add(
+                "message",
+                type
+            );
+
+
+            div.textContent = message;
+
+
+            chatBox.appendChild(div);
+
+
+            chatBox.scrollTop =
+                chatBox.scrollHeight;
+
+        }
+
+
+
+        /* =========================
+           CREATE STUDENT TABLE
+        ========================= */
+
+        function createTable(students) {
+
+
+            const container =
+                document.createElement("div");
+
+
+            container.classList.add(
+                "message",
+                "bot"
+            );
+
+
+            const tableContainer =
+                document.createElement("div");
+
+
+            tableContainer.classList.add(
+                "table-container"
+            );
+
+
+            const table =
+                document.createElement("table");
+
+
+            table.classList.add(
+                "student-table"
+            );
+
+
+            /* Table header */
+
+            table.innerHTML = `
+
+                <thead>
+
+                    <tr>
+
+                        <th>ID</th>
+
+                        <th>Name</th>
+
+                        <th>Age</th>
+
+                        <th>Branch</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                </tbody>
+
+            `;
+
+
+            const tbody =
+                table.querySelector("tbody");
+
+
+            /* Add students */
+
+            students.forEach(student => {
+
+
+                const row =
+                    document.createElement("tr");
+
+
+                row.innerHTML = `
+
+                    <td>${student.id}</td>
+
+                    <td>${student.name}</td>
+
+                    <td>${student.age}</td>
+
+                    <td>${student.branch}</td>
+
+                `;
+
+
+                tbody.appendChild(row);
+
+            });
+
+
+            tableContainer.appendChild(table);
+
+
+            container.appendChild(tableContainer);
+
+
+            chatBox.appendChild(container);
+
+
+            chatBox.scrollTop =
+                chatBox.scrollHeight;
+
+        }
+
+
+
+        /* =========================
+           SEND MESSAGE
+        ========================= */
+
+        async function sendMessage() {
+
+
+            const query =
+                queryInput.value.trim();
+
+
+            /* Don't send empty message */
+
+            if (query === "") {
+
+                return;
+
+            }
+
+
+            /* Show user message */
+
+            addMessage(
+                query,
+                "user"
+            );
+
+
+            /* Clear input */
+
+            queryInput.value = "";
+
+
+            /* Disable button */
+
+            sendButton.disabled = true;
+
+
+            sendButton.textContent =
+                "Thinking...";
+
+
+            try {
+
+
+                /* Send request to FastAPI */
+
+                const response =
+                    await fetch(
+
+                        `http://127.0.0.1:8000/predict?query=${encodeURIComponent(query)}`,
+
+                        {
+
+                            method: "POST"
+
+                        }
+
+                    );
+
+
+                /* Check server response */
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        `Server returned ${response.status}`
+                    );
+
+                }
+
+
+                /* Convert response to JSON */
+
+                const data =
+                    await response.json();
+
+
+                /* =========================
+                   CHECK RESPONSE TYPE
+                ========================= */
+
+
+                if (data.type === "table") {
+
+
+                    /* Database result */
+
+                    createTable(
+                        data.data
+                    );
+
+
+                }
+
+                else {
+
+
+                    /* Normal AI response */
+
+                    addMessage(
+                        data.data,
+                        "bot"
+                    );
+
+                }
+
+
+            }
+
+            catch (error) {
+
+
+                console.error(
+                    "Error:",
+                    error
+                );
+
+
+                addMessage(
+
+                    "❌ Something went wrong. " +
+                    "Make sure FastAPI and Ollama are running.",
+
+                    "bot"
+
+                );
+
+            }
+
+
+            /* Enable button again */
+
+            sendButton.disabled = false;
+
+
+            sendButton.textContent =
+                "Send";
+
+
+            /* Focus input */
+
+            queryInput.focus();
+
+        }
+
+
+
+        /* =========================
+           SEND BUTTON
+        ========================= */
+
+        sendButton.addEventListener(
+            "click",
+            sendMessage
+        );
+
+
+
+        /* =========================
+           ENTER KEY
+        ========================= */
+
+        queryInput.addEventListener(
+            "keydown",
+
+            function(event) {
+
+
+                if (event.key === "Enter") {
+
+                    sendMessage();
+
+                }
+
+            }
+
+        );
+
+
+    </script>
+
+
+</body>
+
+</html>
+```
+
