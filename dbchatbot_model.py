@@ -280,42 +280,42 @@ graph.add_edge(
 workflow = graph.compile()
 
 
-# =========================================================
-# CHAT LOOP
-# =========================================================
+# # =========================================================
+# # CHAT LOOP
+# # =========================================================
 
-print("=" * 60)
-print("        PostgreSQL AI DATABASE AGENT")
-print("=" * 60)
+# print("=" * 60)
+# print("        PostgreSQL AI DATABASE AGENT")
+# print("=" * 60)
 
-print("\nType 'exit' to stop.\n")
+# print("\nType 'exit' to stop.\n")
 
 
-while True:
+# while True:
 
-    user_input = input("You: ")
+#     user_input = input("You: ")
 
-    if user_input.lower() == "exit":
-        break
+#     if user_input.lower() == "exit":
+#         break
 
-    result = workflow.invoke(
-        {
-            "messages": [
-                HumanMessage(
-                    content=user_input
-                )
-            ]
-        }
-    )
+#     result = workflow.invoke(
+#         {
+#             "messages": [
+#                 HumanMessage(
+#                     content=user_input
+#                 )
+#             ]
+#         }
+#     )
 
-    final_message = result["messages"][-1]
+#     final_message = result["messages"][-1]
 
-    print("\nAI:", final_message.content)
-    print()
+#     print("\nAI:", final_message.content)
+#     print()
 
 
 # =========================================================
 # CLOSE DATABASE
 # =========================================================
 
-conn.close()
+# conn.close()
